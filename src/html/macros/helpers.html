@@ -1,3 +1,7 @@
+{# 
+	SVG Sprite技术，参考张鑫旭的博文：
+	http://www.zhangxinxu.com/wordpress/2014/07/introduce-svg-sprite-technology/
+#}
 {% macro sprite(id, viewBox, classes) %}
   {% set viewBox = viewBox or "0 0 1 1"%}
   <span class='sprite -{{id}} {{classes}}'>

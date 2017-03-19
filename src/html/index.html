@@ -1,11 +1,45 @@
-{#
-  Nunjucks Templating!
-  Homepage: https://mozilla.github.io/nunjucks/
-  Docs: https://mozilla.github.io/nunjucks/api.html
-#}
-
 {% extends 'layouts/application.html' %}
 
+{% block head %}
+	<style>
+		.container {
+			display: block;
+			margin: 0 auto;
+			width: 800px;
+		}
+		#default-board > .Character-wrapper{
+			width: 600px;
+			height: 800px;
+		}
+		#data-board > .Character-wrapper {
+			width: 450px;
+			height: 600px;
+		}
+
+		#chars-board > .chars-wrapper {
+			width: 700px;
+			height: 500px;
+		}
+
+	</style>
+{% endblock %}
+
 {% block content %}
-  <h1 data-module="example">Hello World!</h1>
+  <h1 data-module="example">Writing App</h1>
+  <div class="container">
+  	<div class="example">
+			<h1>the default Charater Board</h1>
+			<div class="board" id="default-board"></div>
+		</div>
+		<div class="example">
+			<h1>the XML Character Board</h1>
+			<input type="file" id="xmlfile" name="xml" accept="application/xml" title="选择xml格式文字" />	
+			<div class="board" id="data-board"></div>
+		</div>
+		<!-- 这是条幅部分 -->
+		<div class="example">
+			<h1>the couplet Character Board</h1>
+			<div class="board" id="chars-board"></div>
+		</div>
+  </div>
 {% endblock %}
