@@ -1,11 +1,9 @@
-const Point = function(x, y, time, r) {
+const Point = function(x, y, time, index) {
 	this.x = x;
 	this.y = y;
 	this.time = time;
-	this.r = r;
+	this.index = index;
 }
-
-Point.prototype.
 
 export default Point;
 

@@ -93,7 +93,8 @@ Lowpass Fiter 低筒滤波器
 
 - 绘制为圆点
 
-```
+```javascript
+
   _drawPoint = function (x, y, size) {
     ctx.moveTo(x, y);
     ctx.arc(x, y, size, 0, 2 * Math.PI, false)
@@ -102,7 +103,8 @@ Lowpass Fiter 低筒滤波器
 
 - 填充为图片（笔刷模型）
 
-```
+```javascript
+
   _drawPoint = function (x, y, size, image) {
     ctx.drawImage(image, x, y, xw, yw)
   }
