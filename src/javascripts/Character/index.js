@@ -340,7 +340,7 @@ Character.prototype = {
     }
 
     this.isDrawing = false;
-    this.r = 0;
+    this.index = 0;
   },
 
   drawAllPoints: function(canvas, strokeArray) {

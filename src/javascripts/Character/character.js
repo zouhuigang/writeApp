@@ -166,16 +166,19 @@ Character.prototype = {
   },
 
   _drawCurve: function(ctx, index, points) {
+		const point = points[index];
   	ctx.beginPath();
   	ctx.strokeStyle = 'black';
   	ctx.lineWidth = 2;
   	if(index > 0) {
-  		const point = points[index];
   		const prePoint = points[index - 1];
   		ctx.arc(point.x, point.y, 4, 2 * Math.PI, false);
   		ctx.moveTo(prePoint.x, prePoint.y);
   		ctx.lineTo(point.x, point.y);
+  	} else {
+  		ctx.arc(point.x, point.y, 4, 2 * Math.PI, false);
   	}
+
   	ctx.closePath();
   	ctx.stroke();
   },
@@ -201,11 +204,8 @@ Character.prototype = {
 		this.addListenerMulti(this.canvas, 'touchmove mousemove', function(e) {
 		  this._onInputMove(e, this._getInputCoords(e));
 		});
-		this.addListenerMulti(this.canvas, 'mouseout ', function(e) {
-		  this._onMouseOut(e, this._getInputCoords(e));
-		});
-		this.addListenerMulti(this.canvas, 'touchend mouseup', function(e) {
-		  this._onInputStop(e, this._getInputCoords(e));
+		this.addListenerMulti(this.canvas, 'mouseout touchend mouseup', function(e) {
+		  this._onInputStop(e);
 		});
 	},
 
@@ -246,14 +246,10 @@ Character.prototype = {
 	  }
 	},
 
-	_onMouseOut: function(e, coords) {
-	  this._addStroke();
-	  e.stopPropagation();
-	  e.preventDefault();
-	},
-
-	_onInputStop: function(e, coords) {
-	  this._addStroke();
+	_onInputStop: function(e) {
+		if (this.isDrawing) {
+		  this._addStroke();
+		}
 	  e.stopPropagation();
 	  e.preventDefault();
 	},
