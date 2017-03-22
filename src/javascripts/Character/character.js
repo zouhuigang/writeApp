@@ -8,8 +8,10 @@ const Character = function(id, opts) {
 	this.opts = this.mergeOptions(opts);
 	// 笔画数组
 	this.strokeArray = [];
-	// 单笔画
+	// 单笔画的骨架点
 	this.points = [];
+	// 单笔画的骨架点，控制点和起止点宽度。
+	this.curves = [];
 	// 单个笔画骨架点的索引
 	this.index = 0;
 	// 模块元素
@@ -45,6 +47,7 @@ Character.prototype = {
 		this.canvas.width = this.dom.canvasWrapper.clientWidth;
     this.canvas.height = this.dom.canvasWrapper.clientHeight;
     this.initGrid();
+    this._reset();
 
     if (!this.opts.isXML) {
       this.initEvents();
@@ -68,6 +71,13 @@ Character.prototype = {
         self.drawAllPoints(self.canvas, self.strokeArray);
       }, false);
     }
+	},
+
+	_reset: function() {
+		this.points.length = 0;
+		this.curves.length = 0;
+		this._lastVelocity = 0;
+		this._lastWidth = (this.opts.minWidth + this.opts.maxWidth) /2;
 	},
 
 	// 绘制Canvas背景图案
@@ -115,7 +125,7 @@ Character.prototype = {
 		)
 	},
 
-	_calculateCurveControlPoints: function(s1, s2, s3, index) {
+	_calculateCurveControlPoints: function(s1, s2, s3) {
 		const dx1 = s1.x - s2.x;
 	  const dy1 = s1.y - s2.y;
 	  const dx2 = s2.x - s3.x;
@@ -137,8 +147,8 @@ Character.prototype = {
 	  const ty = s2.y - cm.y;
 
 	  return {
-	    c1: new Point(m1.x + tx, m1.y + ty, undefined, index),
-	    c2: new Point(m2.x + tx, m2.y + ty, undefined, index),
+	    c1: new Point(m1.x + tx, m1.y + ty),
+	    c2: new Point(m2.x + tx, m2.y + ty),
 	  };
 	},
 
@@ -146,47 +156,146 @@ Character.prototype = {
 		this.points.push(point);
 	},
 
+	_addCurve: function(lastPointFlag) {
+		const points = this.points;
+		let controlPoint;
+		// 从第三个点还是绘制
+		if(points.length > 2) {
+			let lastPoints;
+			if(points.length == 3) {
+				lastPoints = points.slice();
+				lastPoints.unshift(lastPoints[0]);
+			}else if (lastPointFlag) {
+				lastPoints = points.slice(-3);
+				lastPoints.push(lastPoints[2]);
+			}else {
+				lastPoints = points.slice(-4);
+			}
+			controlPoint = this._calculateCurveControlPoints(
+				lastPoints[0], 
+				lastPoints[1], 
+				lastPoints[2]
+			);
+			// 该段贝塞尔曲线的第一个控制点
+			const c1 = controlPoint.c2;
+			controlPoint = this._calculateCurveControlPoints(
+				lastPoints[1],
+				lastPoints[2],
+				lastPoints[3]
+			);
+			// 该段贝塞尔曲线的第二个控制点
+			const c2 = controlPoint.c1;
+			// 第一个点和第二个点之间的贝塞尔曲线。
+			const curve = new Bezier(lastPoints[1], c1, c2, lastPoints[2]);
+			// console.log(curve);
+			// TODO
+			const widths = this._calculateCurveWidths(curve);
+			this.curves.push({curve, widths});
+		}
+	},
+
 	_addStroke: function() {
 		if(this.isDrawing) {
 			this.strokeArray.push(this.points.slice());
-			this.points.length = 0;
+			this._reset();
 		}
 		this.isDrawing = false;
 		this.index = 0;
 	},
 
-  _drawPoint: function(x, y, size) {
-  	const ctx = this.context;
-  	ctx.beginPath();
-  	ctx.fillStyle = 'black';
-  	ctx.moveTo(x,y);
-  	ctx.arc(x, y, 3, 2 * Math.PI, false);
-  	ctx.closePath();
-  	ctx.fill();
-  },
+	_drawCurve: function(ctx, index, curves) {
+		// 第三个点开始绘制第一条贝塞尔曲线
+		if(index > 1) {
+			const curve = curves[index - 2].curve;
+			const widths = curves[index -2].widths;
+			const widthDelta = widths.end - widths.start;
+			const drawSteps = Math.floor(curve.length());
+			console.log(drawSteps)
 
-  _drawCurve: function(ctx, index, points) {
+			ctx.beginPath();
+			ctx.strokeStyle = 'black';
+			ctx.fillStyle = 'black';
+			ctx.lineWidth = 3;
+			// ctx.moveTo(curve.startPoint.x, curve.startPoint.y);
+			for(let i = 0; i < drawSteps; i++) {
+				const t = i / drawSteps;
+		    const tt = t * t;
+		    const ttt = tt * t;
+		    const u = 1 - t;
+		    const uu = u * u;
+		    const uuu = uu * u;
+
+		    let x = uuu * curve.startPoint.x;
+		    x += 3 * uu * t * curve.control1.x;
+		    x += 3 * u * tt * curve.control2.x;
+		    x += ttt * curve.endPoint.x;
+
+		    let y = uuu * curve.startPoint.y;
+		    y += 3 * uu * t * curve.control1.y;
+		    y += 3 * u * tt * curve.control2.y;
+		    y += ttt * curve.endPoint.y;
+		    const width = widths.start + (ttt * widthDelta);
+		    ctx.moveTo(x, y);
+		    ctx.arc(x, y, width, 0, 2 * Math.PI, false);
+			}
+			ctx.closePath();
+			ctx.fill();
+		}
+	},
+
+	_pointWidth: function(velocity) {
+		return Math.max(this.opts.maxWidth * this._gaussian(velocity), this.opts.minWidth);
+	},
+
+	_calculateCurveWidths: function(curve) {
+		const startPoint = curve.startPoint;
+		const endPoint = curve.endPoint;
+
+		const widths = { start: null, end: null };
+		const velocity = (this.opts.velocityFilterWeight * endPoint.velocityFrom(startPoint)) + ((1 - this.opts.velocityFilterWeight) * this._lastVelocity);
+
+		const newWidth = this._pointWidth(velocity);
+		
+		widths.start = this._lastWidth;
+		widths.end = newWidth;
+
+		this._lastVelocity = velocity;
+		this._lastWidth = newWidth;
+		console.log(widths)
+		return widths;
+	},
+
+  // 绘制带骨架点的字形骨架
+  _drawPoints: function(ctx, index, points) {
 		const point = points[index];
   	ctx.beginPath();
-  	ctx.strokeStyle = 'black';
+  	ctx.strokeStyle = 'gray';
+  	ctx.fillStyle = 'gray';
   	ctx.lineWidth = 2;
   	if(index > 0) {
   		const prePoint = points[index - 1];
-  		ctx.arc(point.x, point.y, 4, 2 * Math.PI, false);
+  		ctx.arc(point.x, point.y, 2, 2 * Math.PI, false);
   		ctx.moveTo(prePoint.x, prePoint.y);
   		ctx.lineTo(point.x, point.y);
   	} else {
-  		ctx.arc(point.x, point.y, 4, 2 * Math.PI, false);
+  		ctx.arc(point.x, point.y, 2, 2 * Math.PI, false);
   	}
 
   	ctx.closePath();
   	ctx.stroke();
+  	ctx.fill();
   },
 
+
+  // 绘制直线段
   // _drawCurve: function(ctx, index, points) {
   // 	const point = points[index];
-  // 	// console.log(this.strokeArray)
-  // 	this._drawPoint(point.x, point.y);
+  // 	ctx.beginPath();
+  // 	ctx.fillStyle = 'black';
+  // 	ctx.moveTo(point.x, point.y);
+  // 	ctx.arc(point.x, point.y, 3, 2 * Math.PI, false);
+  // 	ctx.closePath();
+  // 	ctx.fill();  		
   // },
 
 
@@ -226,8 +335,9 @@ Character.prototype = {
 	  this.isDrawing = true;
 	  var point = this._createPoint(x, y, undefined, this.index);
 	  this._addPoint(point);
-
-	  this._drawCurve(this.context, this.index, this.points);
+	  this._addCurve();
+	  this._drawCurve(this.context, this.index, this.curves);
+	  this._drawPoints(this.context, this.index, this.points);
 
 	  e.stopPropagation();
 	  e.preventDefault();
@@ -240,7 +350,10 @@ Character.prototype = {
 	    this.index++;
 	    var point = this._createPoint(x, y, undefined, this.index);
 	    this._addPoint(point);
-	    this._drawCurve(this.context, this.index, this.points);
+	    // 如果是第三个点，则添加第一个点和第二个点的曲线
+	    this._addCurve();
+	    this._drawCurve(this.context, this.index, this.curves);
+	    this._drawPoints(this.context, this.index, this.points);
 	    e.stopPropagation();
 	    e.preventDefault();
 	  }
@@ -248,14 +361,18 @@ Character.prototype = {
 
 	_onInputStop: function(e) {
 		if (this.isDrawing) {
+			// 添加和绘制最后一线段的曲线
+			this.index++;
+			this._addCurve(1);
+	    this._drawCurve(this.context, this.index, this.curves);
 		  this._addStroke();
 		}
 	  e.stopPropagation();
 	  e.preventDefault();
 	},
 
-	gaussian: function(v, gaussian) {
-	  return ((1 / (Math.sqrt(2 * Math.PI) * gaussian)) * Math.pow(Math.E, -(v * v) / (2 * gaussian * gaussian)));
+	_gaussian: function(v) {
+	  return  Math.pow(Math.E, -(v * v) / (2 * this.opts.gaussian * this.opts.gaussian));
 	},
 
 	getXML: function(xml) {
@@ -372,11 +489,14 @@ Character.defaultOpts = {
     'Curve'
   ],
 
-  gaussian: 6,
+  velocityFilterWeight: 1,
+
+
+  gaussian: 2,
   sigmoid: 0.3,
   flat: 2.0,
-  wmax: 11.0,
-  wmin: 3.0,
+  maxWidth: 6,
+  minWidth: 2,
   timeScale: 15,
 
   withGrid: true,

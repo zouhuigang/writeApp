@@ -9,8 +9,8 @@ const Bezier = function(startPoint, control1, control2, endPoint) {
 Bezier.prototype.length = function() {
 	const steps = 10;
 	let length = 0;
-	let px;
-	let py;
+	let px = this.startPoint.x;
+	let py = this.startPoint.y;
 
 	for (let i = 0; i <= steps; i += 1) {
 		const t = i /steps;
@@ -26,11 +26,11 @@ Bezier.prototype.length = function() {
 			t,
 			this.startPoint.y,
 			this.control1.y,
-			this.contro2.y,
+			this.control2.y,
 			this.endPoint.y
 		);
 		if(i >0) {
-			const xdiff = cx - py;
+			const xdiff = cx - px;
 			const ydiff = cy - py;
 			length += Math.sqrt((xdiff * xdiff) + (ydiff * ydiff))
 		}
