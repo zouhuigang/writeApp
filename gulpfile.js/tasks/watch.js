@@ -17,5 +17,5 @@ var watchTask = function() {
   })
 }
 
-gulp.task('watch', ['browserSync'], watchTask)
+gulp.task('watch', ['browserSync', 'express'], watchTask)
 module.exports = watchTask

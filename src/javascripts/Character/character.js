@@ -10,6 +10,8 @@ const Character = function(id, opts) {
 	this.strokeArray = [];
 	// 单笔画的骨架点
 	this.points = [];
+	// 曲线数组
+	this.curvesArray = [];
 	// 单笔画的骨架点，控制点和起止点宽度。
 	this.curves = [];
 	// 单个笔画骨架点的索引
@@ -42,7 +44,7 @@ Character.prototype = {
 	init: function() {
 		var self = this;
 		var canvas = this.canvas;
-		var xml = this.xml;
+		var xmlFileInput = this.opts.xmlFileInput;
 
 		this.canvas.width = this.dom.canvasWrapper.clientWidth;
     this.canvas.height = this.dom.canvasWrapper.clientHeight;
@@ -52,23 +54,24 @@ Character.prototype = {
     if (!this.opts.isXML) {
       this.initEvents();
     }
-    // 绘制xml文件
-    if (this.opts.xmlFile) {
-      this.strokeArray.length = 0;
-      this.initGrid();
-      this.mode = "brush";
-      this.parseXML();
-      this.changeXY(this.strokeArray, this.opts, 1);
-      this.drawAllPoints(this.canvas, this.strokeArray);
+
+    if (this.opts.isXML && !xmlFileInput) {
+    	self.curvesArray.length = 0;
+    	self.initGrid();
+    	self.mode = "brush";
+    	self.parseXML();
+    	self.changeXY(self.curvesArray, self.opts, 1);
+    	self.drawAllPoints(self.canvas, self.curvesArray);
     }
-    if (xml) {
-      xml.addEventListener("change", function() {
-        self.strokeArray.length = 0;
+
+    if (this.opts.isXML && xmlFileInput) {
+      xmlFileInput.addEventListener("change", function() {
+        self.curvesArray.length = 0;
         self.initGrid();
         self.mode = "brush";
-        self.parseXML(xml.files[0]);
-        self.changeXY(self.strokeArray, self.opts, 1);
-        self.drawAllPoints(self.canvas, self.strokeArray);
+        self.parseXML(xmlFileInput.files[0]);
+        self.changeXY(self.curvesArray, self.opts, 1);
+        self.drawAllPoints(self.canvas, self.curvesArray);
       }, false);
     }
 	},
@@ -78,6 +81,8 @@ Character.prototype = {
 		this.curves.length = 0;
 		this._lastVelocity = 0;
 		this._lastWidth = (this.opts.minWidth + this.opts.maxWidth) /2;
+		this.isDrawing = false;
+		this.index = 0;
 	},
 
 	// 绘制Canvas背景图案
@@ -197,10 +202,10 @@ Character.prototype = {
 	_addStroke: function() {
 		if(this.isDrawing) {
 			this.strokeArray.push(this.points.slice());
+			this.curvesArray.push(this.curves.slice());
 			this._reset();
 		}
-		this.isDrawing = false;
-		this.index = 0;
+		
 	},
 
 	_drawCurve: function(ctx, index, curves) {
@@ -210,7 +215,6 @@ Character.prototype = {
 			const widths = curves[index -2].widths;
 			const widthDelta = widths.end - widths.start;
 			const drawSteps = Math.floor(curve.length());
-			console.log(drawSteps)
 
 			ctx.beginPath();
 			ctx.strokeStyle = 'black';
@@ -261,7 +265,6 @@ Character.prototype = {
 
 		this._lastVelocity = velocity;
 		this._lastWidth = newWidth;
-		console.log(widths)
 		return widths;
 	},
 
@@ -382,36 +385,76 @@ Character.prototype = {
 	},
 
 	loadXML: function(xmlFile) {
-	  var xmlDoc, url, xmlhttp, xmlString, domParser;
-	  if (!this.opts.xmlFile) {
-	    url = window.URL.createObjectURL(xmlFile);
-	    xmlhttp = new XMLHttpRequest() || new ActiveXObject("Microsoft.XMLHTTP");
-	    xmlhttp.open("GET", url, false);
-	    xmlhttp.onload = function() {
-	      if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-	        xmlDoc = xmlhttp.responseXML;
-	      }
-	    }
-	    xmlhttp.send(null);
-	    return xmlDoc;
+	  let xmlDoc, domParser, xhr, xmlString, xmlFileUrl;
+	  if(xmlFile) {
+	  	xmlFileUrl = window.URL.createObjectURL(xmlFile);
+	  	xhr = new XMLHttpRequest();
+	  	console.log(xmlFileUrl)
+	  	xhr.open("GET", xmlFileUrl, false);
+	  	xhr.onload = function() {
+	  		if( xhr.readyState == 4 && xhr.status == 200){
+	  		    xmlDoc =  xhr.responseXML;
+	  		    console.log(xmlDoc);
+	  		}
+	  	}
+	  	xhr.send(null);
+	  	return xmlDoc;
 	  } else {
-	    xmlhttp = new XMLHttpRequest() || new ActiveXObject("Microsoft.XMLHTTP");
-	    url = encodeURI("getxml.php?name=" + this.opts.fileName);
-	    xmlhttp.open("GET", url, false);
+	  	xhr = new XMLHttpRequest();
+	  	xmlFileUrl = encodeURI("/api/getCharxml/我");
+	  	xhr.open("GET", xmlFileUrl, false);
+	  	
+	  	xhr.onload = function(){
+	  	    if( xhr.readyState == 4 && xhr.status == 200){
+	  	        xmlString =  xhr.responseText;
+	  	    }
+	  	}
+	  	xhr.send(null);
 
-	    xmlhttp.onload = function() {
-	      if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-	        xmlString = xmlhttp.responseText;
-	      }
-	    }
-	    xmlhttp.send(null);
 
-
-	    domParser = new DOMParser();
-	    xmlDoc = domParser.parseFromString(xmlString, 'text/xml');
-	    return xmlDoc;
+	  	domParser = new DOMParser();
+	  	xmlDoc = domParser.parseFromString(xmlString, 'text/xml');
+	  	return xmlDoc;
 	  }
+	},
 
+	drawAllPoints: function(canvas, curvesArray) {
+		console.log(curvesArray);
+		var ctx = canvas.getContext("2d");
+		for (let i = 0; i < curvesArray.length; i++) {
+		  for (let j = 1; j <= curvesArray[i].length; j++) {
+		    var curves = curvesArray[i];
+		    this._drawCurve(this.context, i, curves);
+		  }
+		}
+	},
+
+	parseXML: function(xmlFile) {
+		var i, j;
+		var xmlDoc = this.loadXML(xmlFile);
+
+		var stroke = xmlDoc.getElementsByTagName("Stroke");
+		for (i = 0; i < stroke.length; i++) {
+
+		  for (j = 0; j < stroke[i].childNodes.length; j++) {
+		    var t, point = {};
+		    var x = Number(stroke[i].childNodes[j].getAttribute("x"));
+		    var y = Number(stroke[i].childNodes[j].getAttribute("y"));
+		    if (j == 0) {
+		      t = 0;
+		    } else {
+		      t = (this.points[j - 1].t + Number(stroke[i].childNodes[j].getAttribute("deltaTime")) / this.opts.timeScale);
+		    }
+		    point = new Point(x, y, t);
+		    this.index++;
+		    this._addPoint(point);
+		    this._addCurve();
+		  }
+		  this.strokeArray.push(this.points.slice());
+		  this.curvesArray.push(this.curves.slice());
+		  this._reset();
+		}
+		this.points.length = 0;
 	},
 
 	changeXY: function(strokeArray, opts, charScale, flag) {
@@ -496,7 +539,7 @@ Character.defaultOpts = {
   sigmoid: 0.3,
   flat: 2.0,
   maxWidth: 6,
-  minWidth: 2,
+  minWidth: 3,
   timeScale: 15,
 
   withGrid: true,
@@ -505,7 +548,9 @@ Character.defaultOpts = {
   strokeColors: ['black', 'gray3', 'gray2', 'gray1'],
 
   isXML: false,
-  xmlFilePath: "",
+  xmlFileInput: null,
+  xmlFileName: '德',
+
   background: "#fff",
 
   charRatio: 0.85,

@@ -6,6 +6,7 @@ var webpack           = require('webpack')
 var webpackMultiConfig = require('../lib/webpack-multi-config')
 var config            = require('../config')
 var pathToUrl         = require('../lib/pathToUrl')
+var proxy = require('http-proxy-middleware')
 
 var browserSyncTask = function() {
 
@@ -21,12 +22,18 @@ var browserSyncTask = function() {
 
   var server = config.tasks.browserSync.proxy || config.tasks.browserSync.server;
 
+  var apiProxy = proxy('/api', {
+      target: 'http://localhost:9717',
+      changeOrigin: true,             
+  });
+
   server.middleware = [
     require('webpack-dev-middleware')(compiler, {
       stats: 'errors-only',
       publicPath: pathToUrl('/', webpackConfig.output.publicPath)
     }),
-    require('webpack-hot-middleware')(compiler)
+    require('webpack-hot-middleware')(compiler),
+    apiProxy
   ]
 
   browserSync.init(config.tasks.browserSync)

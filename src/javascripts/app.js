@@ -3,9 +3,8 @@ import Character  from './Character/character';
 // import Chars from './Chars';
 
 
-// var xmlFile = document.getElementById('xmlfile');
 var defaultChar = new Character('default-board');
-// var dataChar = new Character('data-board', {isXML: true}, xmlFile);
+var dataChar = new Character('data-board', {isXML: true});
 // var charsBoard = new Chars('chars-board');
 
 
