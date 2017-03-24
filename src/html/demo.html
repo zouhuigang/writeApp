@@ -1,0 +1,44 @@
+{% extends 'layouts/application.html' %}
+
+{% block head %}
+	<style>
+		.container {
+			display: block;
+			margin: 0 auto;
+			width: 800px;
+		}
+		#default-board > .Character-wrapper{
+			width: 600px;
+			height: 800px;
+		}
+		#data-board > .Character-wrapper {
+			width: 450px;
+			height: 600px;
+		}
+
+		#chars-board > .chars-wrapper {
+			width: 700px;
+			height: 500px;
+		}
+
+	</style>
+{% endblock %}
+
+{% block content %}
+  <!-- <h1 data-module="example">Writing App</h1> -->
+  <div class="container">
+  	<div class="example">
+			<h1>写字板</h1>
+			<div class="board" id="default-board"></div>
+		</div>
+		<div class="example">
+			<h1>展示板</h1>
+			<!-- <input type="file" id="xmlfile" name="xml" accept="application/xml" title="选择xml格式文字" />	 -->
+			<div class="board" id="data-board"></div>
+		</div>
+		<!-- <div class="example">
+			<h1>the couplet Character Board</h1>
+			<div class="board" id="chars-board"></div>
+		</div> -->
+  </div>
+{% endblock %}

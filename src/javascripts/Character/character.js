@@ -6,6 +6,8 @@ const Character = function(id, opts) {
 	// DOM id
 	this.id = id;
 	this.opts = this.mergeOptions(opts);
+
+	this.brush = null;
 	// 笔画数组
 	this.strokeArray = [];
 	// 单笔画的骨架点
@@ -30,7 +32,11 @@ const Character = function(id, opts) {
   }
   this.canvas = this.dom.canvas;
   this.context = this.canvas && this.canvas.getContext && this.canvas.getContext('2d') ? this.canvas.getContext('2d') : null;
+
   this.init();
+  
+
+
 }
 
 Character.prototype = {
@@ -42,12 +48,19 @@ Character.prototype = {
 	},
 
 	init: function() {
+		this.preloadImg();
+	},
+
+	initCanvas: function() {
 		var self = this;
 		var canvas = this.canvas;
 		var xmlFileInput = this.opts.xmlFileInput;
 
 		this.canvas.width = this.dom.canvasWrapper.clientWidth;
     this.canvas.height = this.dom.canvasWrapper.clientHeight;
+
+    this.opts.charBoxWidth = this.canvas.width;
+
     this.initGrid();
     this._reset();
 
@@ -60,7 +73,7 @@ Character.prototype = {
     	self.initGrid();
     	self.mode = "brush";
     	self.parseXML();
-    	self.changeXY(self.curvesArray, self.opts, 1);
+    	self.changeXY(self.curvesArray, 1);
     	self.drawAllPoints(self.canvas, self.curvesArray);
     }
 
@@ -70,11 +83,20 @@ Character.prototype = {
         self.initGrid();
         self.mode = "brush";
         self.parseXML(xmlFileInput.files[0]);
-        self.changeXY(self.curvesArray, self.opts, 1);
+        self.changeXY(self.curvesArray, 1);
         self.drawAllPoints(self.canvas, self.curvesArray);
       }, false);
     }
 	},
+
+	preloadImg: function() {
+		var self = this;
+    this.brush = new Image();
+    this.brush.onload = function() {
+    	self.initCanvas()
+    }
+    this.brush.src = "images/model-" + this.opts.strokeColors[0] + ".png";
+  },
 
 	_reset: function() {
 		this.points.length = 0;
@@ -171,6 +193,7 @@ Character.prototype = {
 				lastPoints = points.slice();
 				lastPoints.unshift(lastPoints[0]);
 			}else if (lastPointFlag) {
+				// 如果是最后两个点之间的曲线
 				lastPoints = points.slice(-3);
 				lastPoints.push(lastPoints[2]);
 			}else {
@@ -208,14 +231,13 @@ Character.prototype = {
 		
 	},
 
-	_drawCurve: function(ctx, index, curves) {
+	_drawCurve: function(ctx, index, curves, last) {
 		// 第三个点开始绘制第一条贝塞尔曲线
 		if(index > 1) {
 			const curve = curves[index - 2].curve;
 			const widths = curves[index -2].widths;
 			const widthDelta = widths.end - widths.start;
-			const drawSteps = Math.floor(curve.length());
-
+			const drawSteps = Math.floor(curve.length() *  5);
 			ctx.beginPath();
 			ctx.strokeStyle = 'black';
 			ctx.fillStyle = 'black';
@@ -239,12 +261,24 @@ Character.prototype = {
 		    y += 3 * u * tt * curve.control2.y;
 		    y += ttt * curve.endPoint.y;
 		    const width = widths.start + (ttt * widthDelta);
-		    ctx.moveTo(x, y);
-		    ctx.arc(x, y, width, 0, 2 * Math.PI, false);
+		    // this._drawImage(x, y, width)
+		    this._drawPoint(x, y, width)
 			}
 			ctx.closePath();
 			ctx.fill();
 		}
+	},
+
+	_drawPoint: function(x, y, width) {
+		const ctx = this.context;
+		ctx.moveTo(x, y);
+		ctx.arc(x, y, width, 0, 2 * Math.PI, false);
+	},
+
+	_drawImage: function(x, y, width) {
+		const ctx = this.context;
+		ctx.drawImage(this.brush, x - 1 * width, y-width, 2 * width, 2* width)
+			
 	},
 
 	_pointWidth: function(velocity) {
@@ -289,18 +323,16 @@ Character.prototype = {
   	ctx.fill();
   },
 
-
   // 绘制直线段
-  // _drawCurve: function(ctx, index, points) {
-  // 	const point = points[index];
-  // 	ctx.beginPath();
-  // 	ctx.fillStyle = 'black';
-  // 	ctx.moveTo(point.x, point.y);
-  // 	ctx.arc(point.x, point.y, 3, 2 * Math.PI, false);
-  // 	ctx.closePath();
-  // 	ctx.fill();  		
-  // },
-
+  _drawStraightLine: function(ctx, index, points) {
+  	const point = points[index];
+  	ctx.beginPath();
+  	ctx.fillStyle = 'black';
+  	ctx.moveTo(point.x, point.y);
+  	ctx.arc(point.x, point.y, 3, 2 * Math.PI, false);
+  	ctx.closePath();
+  	ctx.fill();  		
+  },
 
   addListenerMulti: function(el, s, fn) {
     var evts = s.split(' ');
@@ -367,7 +399,7 @@ Character.prototype = {
 			// 添加和绘制最后一线段的曲线
 			this.index++;
 			this._addCurve(1);
-	    this._drawCurve(this.context, this.index, this.curves);
+	    this._drawCurve(this.context, this.index, this.curves, 1);
 		  this._addStroke();
 		}
 	  e.stopPropagation();
@@ -401,7 +433,7 @@ Character.prototype = {
 	  	return xmlDoc;
 	  } else {
 	  	xhr = new XMLHttpRequest();
-	  	xmlFileUrl = encodeURI("/api/getCharxml/我");
+	  	xmlFileUrl = encodeURI("/api/getCharxml/" + this.opts.xmlFileName);
 	  	xhr.open("GET", xmlFileUrl, false);
 	  	
 	  	xhr.onload = function(){
@@ -410,7 +442,6 @@ Character.prototype = {
 	  	    }
 	  	}
 	  	xhr.send(null);
-
 
 	  	domParser = new DOMParser();
 	  	xmlDoc = domParser.parseFromString(xmlString, 'text/xml');
@@ -422,10 +453,14 @@ Character.prototype = {
 		console.log(curvesArray);
 		var ctx = canvas.getContext("2d");
 		for (let i = 0; i < curvesArray.length; i++) {
-		  for (let j = 1; j <= curvesArray[i].length; j++) {
-		    var curves = curvesArray[i];
-		    this._drawCurve(this.context, i, curves);
+	    var curves = curvesArray[i];
+	    var points = this.strokeArray[i];
+		  for (let j = 0; j < curvesArray[i].length; j++) {
+		  	this._drawPoints(this.context, j, points);
+		    this._drawCurve(this.context, j, curves);
 		  }
+		  // 画出最后一段曲线
+		  this._drawCurve(this.context, curvesArray[i].length, curves, 1);
 		}
 	},
 
@@ -437,28 +472,46 @@ Character.prototype = {
 		for (i = 0; i < stroke.length; i++) {
 
 		  for (j = 0; j < stroke[i].childNodes.length; j++) {
-		    var t, point = {};
+		    var time, point;
 		    var x = Number(stroke[i].childNodes[j].getAttribute("x"));
 		    var y = Number(stroke[i].childNodes[j].getAttribute("y"));
 		    if (j == 0) {
-		      t = 0;
+		      time = 0.0;
 		    } else {
-		      t = (this.points[j - 1].t + Number(stroke[i].childNodes[j].getAttribute("deltaTime")) / this.opts.timeScale);
+		      time = (this.points[j - 1].time + Number(stroke[i].childNodes[j].getAttribute("deltaTime")) / this.opts.timeScale);
 		    }
-		    point = new Point(x, y, t);
+		    point = new Point(x, y, time, this.index);
 		    this.index++;
 		    this._addPoint(point);
 		    this._addCurve();
 		  }
+		  this._addCurve(1);
+
 		  this.strokeArray.push(this.points.slice());
 		  this.curvesArray.push(this.curves.slice());
 		  this._reset();
 		}
+		console.log(this.strokeArray)
 		this.points.length = 0;
 	},
 
-	changeXY: function(strokeArray, opts, charScale, flag) {
-	  var charAspectRatio;
+	// 等比例缩放坐标， 先缩小为[-1, 1]之间，然后增大为需要的尺寸
+	// opts包括charRatio, charBoxWidth, aspectRatio
+	changeXY: function(curvesArray, opts, charScale) {
+		// 字的长宽比
+	  let charAspectRatio;
+	  let strokeArray = this.strokeArray;
+	  // 字占视窗的比例
+	  const charRatio = opts.charRatio || this.opts.charRatio;
+	  // 字外框的目标宽
+	  const charBoxWidth = opts.charBoxWidth || this.opts.charBoxWidth;
+	  // 字本身的比例
+	  const aspectRatio = opts.aspectRatio || this.opts.aspectRatio;
+	  // 字外框的目标高
+	  const charBoxHeight = charBoxWidth * aspectRatio;
+
+	  const startPosition = opts.startPosition || this.opts.startPosition;
+
 
 	  var minX = strokeArray[0][0].x;
 	  var minY = strokeArray[0][0].y;
@@ -482,41 +535,53 @@ Character.prototype = {
 	      }
 	    }
 	  }
+
+	  // 取得global bounding box的中点
 	  var widthX = maxX - minX;
 	  var heightY = maxY - minY;
 	  var centerX = (minX + maxX) * 0.5;
 	  var centerY = (minY + maxY) * 0.5;
+
 	  // 保存长宽比，不然显示出来的就是1：1
+	  charAspectRatio = widthX / heightY;
 
-	  var charAspectRatio = widthX / heightY;
-
-
-	  //字在区域内显示的比例
-	  var scale = opts.charRatio;
+	  //字在区域内显示的比例, 默认为4/3
+	  var scale = charRatio;
 	  //if the width is larger, make sure it is within range
 	  if (charAspectRatio > 1.0) {
 	    scale /= charAspectRatio;
 	  }
-
-	  var charBoxWidth = opts.charBoxWidth;
-	  var charBoxHeight = opts.charBoxWidth * opts.aspectRatio;
 
 	  for (var i = 0; i < strokeArray.length; i++) {
 	    for (var j = 0; j < strokeArray[i].length; j++) {
 	      //normalize the coordinates into [-0.5,0.5]	
 	      strokeArray[i][j].x = (strokeArray[i][j].x - centerX) * scale / widthX;
 	      strokeArray[i][j].y = (strokeArray[i][j].y - centerY) * scale / heightY;
+
+	      if(j != strokeArray[i].length - 1) {
+		      const c1 = curvesArray[i][j].curve.control1;
+		      const c2 = curvesArray[i][j].curve.control2;
+	      	c1.x = (c1.x - centerX) * scale / widthX;
+	      	c1.y = (c1.y - centerY) * scale / heightY;
+	      	c2.x = (c2.x - centerX) * scale / widthX;
+	      	c2.y = (c2.y - centerY) * scale / heightY;
+	      }
+
 	      //map to canvas space
 	      // 缩放需要对应字的比例，固定比例为字的原始比例。
-	      strokeArray[i][j].x = (strokeArray[i][j].x * charAspectRatio + 0.5) * charBoxWidth + opts.startPosition.x;
+	      strokeArray[i][j].x = (strokeArray[i][j].x * charAspectRatio + 0.5) * charBoxWidth + startPosition.x;
 	      //字要缩放一样的倍数，然后平移1/2画布高度。
-	      strokeArray[i][j].y = strokeArray[i][j].y * charBoxWidth + 0.5 * charBoxHeight + opts.startPosition.y;
-	      // arr[i][j].y=(arr[i][j].y+0.5)*charBoxHeight;
-	      // 
-	      if (!flag) {
-	        strokeArray[i][j].w = strokeArray[i][j].w / charScale;
-	      } else {
-	        strokeArray[i][j].w = strokeArray[i][j].w * charScale;
+	      strokeArray[i][j].y = strokeArray[i][j].y * charBoxWidth + 0.5 * charBoxHeight + startPosition.y;
+
+	      if(j != strokeArray[i].length - 1) {
+	      	const c1 = curvesArray[i][j].curve.control1;
+		      const c2 = curvesArray[i][j].curve.control2;
+		      const widths = curvesArray[i][j].widths;
+
+	      	c1.x = (c1.x * charAspectRatio + 0.5) * charBoxWidth + startPosition.x;
+	      	c1.y = c1.y * charBoxWidth + 0.5 * charBoxHeight + startPosition.y;
+	      	c2.x = (c2.x * charAspectRatio + 0.5) * charBoxWidth + startPosition.x;
+	      	c2.y = c2.y * charBoxWidth + 0.5 * charBoxHeight + startPosition.y;
 	      }
 
 	    }
@@ -532,20 +597,20 @@ Character.defaultOpts = {
     'Curve'
   ],
 
-  velocityFilterWeight: 1,
+  velocityFilterWeight: 0.7,
 
 
   gaussian: 2,
   sigmoid: 0.3,
   flat: 2.0,
-  maxWidth: 6,
+  maxWidth: 7,
   minWidth: 3,
   timeScale: 15,
 
   withGrid: true,
   radius: 5,
   lineWidth: 1.2,
-  strokeColors: ['black', 'gray3', 'gray2', 'gray1'],
+  strokeColors: ['raindrop1', 'gray3', 'gray2', 'gray1'],
 
   isXML: false,
   xmlFileInput: null,
