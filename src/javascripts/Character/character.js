@@ -597,7 +597,7 @@ Character.defaultOpts = {
     'Curve'
   ],
 
-  velocityFilterWeight: 0.7,
+  velocityFilterWe‘ight: 0.7,
 
 
   gaussian: 2,
