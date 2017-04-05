@@ -115,18 +115,18 @@ Character.prototype = {
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    ctx.beginPath();
-    ctx.strokeStyle = 'gray';
-    ctx.lineWidth = 1.5;
-    ctx.moveTo(0, ctx.canvas.height / 2);
-    ctx.lineTo(ctx.canvas.width, ctx.canvas.height / 2);
-    ctx.moveTo(ctx.canvas.width / 2, 0);
-    ctx.lineTo(ctx.canvas.width / 2, ctx.canvas.height);
-    ctx.stroke();
-    ctx.lineWidth = 0.5;
-    ctx.closePath();
-    this._drawDottedLine(ctx, 0, 0, ctx.canvas.width, ctx.canvas.height, 10);
-    this._drawDottedLine(ctx, 0, ctx.canvas.height, ctx.canvas.width, 0, 10);
+    // ctx.beginPath();
+    // ctx.strokeStyle = 'gray';
+    // ctx.lineWidth = 1.5;
+    // ctx.moveTo(0, ctx.canvas.height / 2);
+    // ctx.lineTo(ctx.canvas.width, ctx.canvas.height / 2);
+    // ctx.moveTo(ctx.canvas.width / 2, 0);
+    // ctx.lineTo(ctx.canvas.width / 2, ctx.canvas.height);
+    // ctx.stroke();
+    // ctx.lineWidth = 0.5;
+    // ctx.closePath();
+    // this._drawDottedLine(ctx, 0, 0, ctx.canvas.width, ctx.canvas.height, 10);
+    // this._drawDottedLine(ctx, 0, ctx.canvas.height, ctx.canvas.width, 0, 10);
 	},
 
 	_drawDottedLine: function(context, x1, y1, x2, y2, dashLength) {
@@ -186,7 +186,7 @@ Character.prototype = {
 	_addCurve: function(lastPointFlag) {
 		const points = this.points;
 		let controlPoint;
-		// 从第三个点还是绘制
+		// 从第三个点开始绘制
 		if(points.length > 2) {
 			let lastPoints;
 			if(points.length == 3) {
@@ -215,8 +215,6 @@ Character.prototype = {
 			const c2 = controlPoint.c1;
 			// 第一个点和第二个点之间的贝塞尔曲线。
 			const curve = new Bezier(lastPoints[1], c1, c2, lastPoints[2]);
-			// console.log(curve);
-			// TODO
 			const widths = this._calculateCurveWidths(curve);
 			this.curves.push({curve, widths});
 		}
@@ -237,12 +235,12 @@ Character.prototype = {
 			const curve = curves[index - 2].curve;
 			const widths = curves[index -2].widths;
 			const widthDelta = widths.end - widths.start;
-			const drawSteps = Math.floor(curve.length() *  5);
+			const drawSteps = Math.floor(curve.length() * 6);
+			console.log(drawSteps)
 			ctx.beginPath();
 			ctx.strokeStyle = 'black';
 			ctx.fillStyle = 'black';
 			ctx.lineWidth = 3;
-			// ctx.moveTo(curve.startPoint.x, curve.startPoint.y);
 			for(let i = 0; i < drawSteps; i++) {
 				const t = i / drawSteps;
 		    const tt = t * t;
@@ -272,7 +270,7 @@ Character.prototype = {
 	_drawPoint: function(x, y, width) {
 		const ctx = this.context;
 		ctx.moveTo(x, y);
-		ctx.arc(x, y, width, 0, 2 * Math.PI, false);
+		ctx.arc(x, y, 1, 0, 2 * Math.PI, false);
 	},
 
 	_drawImage: function(x, y, width) {
@@ -319,8 +317,8 @@ Character.prototype = {
   	}
 
   	ctx.closePath();
-  	ctx.stroke();
-  	ctx.fill();
+  	// ctx.stroke();
+  	// ctx.fill();
   },
 
   // 绘制直线段
@@ -354,7 +352,7 @@ Character.prototype = {
 	},
 
 	_getInputCoords: function(e) {
-	  var touch = ("createTouch" in document);
+	  var touch = ("touches" in e);
 	  var UIEvent = touch ? e.touches[0] : e;
 	  var x = UIEvent.clientX - this.canvas.getBoundingClientRect().left;
 	  var y = UIEvent.clientY - this.canvas.getBoundingClientRect().top;
@@ -382,6 +380,7 @@ Character.prototype = {
 	  if (this.isDrawing) {
 	    var x = coords.x;
 	    var y = coords.y;
+	  	console.log(x,y)
 	    this.index++;
 	    var point = this._createPoint(x, y, undefined, this.index);
 	    this._addPoint(point);
@@ -597,14 +596,14 @@ Character.defaultOpts = {
     'Curve'
   ],
 
-  velocityFilterWe‘ight: 0.7,
+  velocityFilterWeight: 0.7,
 
 
-  gaussian: 2,
+  gaussian: 1,
   sigmoid: 0.3,
   flat: 2.0,
-  maxWidth: 7,
-  minWidth: 3,
+  maxWidth: 11,
+  minWidth: 5,
   timeScale: 15,
 
   withGrid: true,
@@ -614,7 +613,7 @@ Character.defaultOpts = {
 
   isXML: false,
   xmlFileInput: null,
-  xmlFileName: '德',
+  xmlFileName: '日',
 
   background: "#fff",
 

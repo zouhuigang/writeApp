@@ -3,7 +3,7 @@ var express  = require('express')
 var gulp     = require('gulp')
 var path     = require('path')
 var fs = require('fs');
-// var pinyin = require('./util/pinyin');
+var pinyin = require('../lib/pinyin');
 
 
 var expressTask = function() {
@@ -32,7 +32,10 @@ var expressTask = function() {
   });
   app.get('/api/getFormatedChar/:name', function(req, res) {
     fs.readFile(dataDir + '')
-  })  
+  });
+  app.get('/api/pinyin', function(req, res) {
+    res.json(pinyin);
+  });
 }
 
 gulp.task('express', expressTask)

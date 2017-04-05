@@ -1,5 +1,9 @@
 var fs = require('fs')
-var obj = JSON.parse(fs.readFileSync('pinyin.json', 'utf8'));
+var path = require('path')
+
+var pinyinPath = path.resolve('./gulpfile.js/lib/pinyin.json')
+console.log(pinyinPath)
+var obj = JSON.parse(fs.readFileSync(pinyinPath, 'utf8'));
 
 var newObj = {};
 var keys = [], len, k, i;

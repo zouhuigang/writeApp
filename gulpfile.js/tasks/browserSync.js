@@ -8,6 +8,7 @@ var config            = require('../config')
 var pathToUrl         = require('../lib/pathToUrl')
 var proxy = require('http-proxy-middleware')
 
+
 var browserSyncTask = function() {
 
   var webpackConfig = webpackMultiConfig('development')
@@ -26,7 +27,7 @@ var browserSyncTask = function() {
       target: 'http://localhost:9717',
       changeOrigin: true,             
   });
-
+  // browser-sync 于webpack公用
   server.middleware = [
     require('webpack-dev-middleware')(compiler, {
       stats: 'errors-only',

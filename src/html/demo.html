@@ -1,44 +1,37 @@
 {% extends 'layouts/application.html' %}
 
-{% block head %}
-	<style>
-		.container {
-			display: block;
-			margin: 0 auto;
-			width: 800px;
-		}
-		#default-board > .Character-wrapper{
-			width: 600px;
-			height: 800px;
-		}
-		#data-board > .Character-wrapper {
-			width: 450px;
-			height: 600px;
-		}
-
-		#chars-board > .chars-wrapper {
-			width: 700px;
-			height: 500px;
-		}
-
-	</style>
-{% endblock %}
 
 {% block content %}
-  <!-- <h1 data-module="example">Writing App</h1> -->
-  <div class="container">
-  	<div class="example">
-			<h1>写字板</h1>
-			<div class="board" id="default-board"></div>
-		</div>
-		<div class="example">
-			<h1>展示板</h1>
-			<!-- <input type="file" id="xmlfile" name="xml" accept="application/xml" title="选择xml格式文字" />	 -->
-			<div class="board" id="data-board"></div>
-		</div>
-		<!-- <div class="example">
-			<h1>the couplet Character Board</h1>
-			<div class="board" id="chars-board"></div>
-		</div> -->
-  </div>
+	<button class="mdc-button mdc-button--accent menu">
+	  Colored button
+	</button>
+	
+	<h1 class="mdc-typography--display1 mdc-typography--adjust-margin">
+    大标题
+  </h1>
+  <p>容器container</p>
+	<ul class="mdc-list">
+	  <li class="mdc-list-item">第一项</li>
+	  <li class="mdc-list-item">Single-line item</li>
+	  <li class="mdc-list-item">Single-line item</li>
+	</ul>
+
+  <aside class="mdc-temporary-drawer mdc-typography">
+    <nav class="mdc-temporary-drawer__drawer">
+      <header class="mdc-temporary-drawer__header">
+        <div class="mdc-temporary-drawer__header-content">
+          Header here
+        </div>
+      </header>
+      <nav id="icon-with-text-demo" class="mdc-temporary-drawer__content mdc-list">
+        <a class="mdc-list-item mdc-temporary-drawer--selected" href="#">
+          <i class="material-icons mdc-list-item__start-detail" aria-hidden="true">inbox</i>Inbox
+        </a>
+        <a class="mdc-list-item" href="#">
+          <i class="material-icons mdc-list-item__start-detail" aria-hidden="true">star</i>Star
+        </a>
+      </nav>
+    </nav>
+  </aside>
+
 {% endblock %}

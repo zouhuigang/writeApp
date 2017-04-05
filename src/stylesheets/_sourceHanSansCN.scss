@@ -1,0 +1,21 @@
+$SourceHanSansCN-font-path: "../fonts/sourceHanSansCN/" !default;
+
+
+@font-face {
+    font-family: "SourceHanSansCN";
+    src: url('#{$SourceHanSansCN-font-path}SourceHanSansCN-Regular.eot');
+    src: url("#{$SourceHanSansCN-font-path}SourceHanSansCN-Regular.eot?#iefix") format('embedded-opentype'),
+        url("#{$SourceHanSansCN-font-path}SourceHanSansCN-Regular.woff") format("woff"),
+        url("#{$SourceHanSansCN-font-path}SourceHanSansCN-Regular.ttf") format("truetype");
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: "SourceHanSansCN";
+    src: url('#{$SourceHanSansCN-font-path}SoureHanSansCN-Medium.eot');
+    src: url("#{$SourceHanSansCN-font-path}SourceHanSansCN-Medium.eot?#iefix") format('embedded-opentype'),
+        url("#{$SourceHanSansCN-font-path}SourceHanSansCN-Medium.woff") format("woff"),
+        url("#{$SourceHanSansCN-font-path}SourceHanSansCN-Medium.ttf") format("truetype");
+    font-weight: 500;
+}
+

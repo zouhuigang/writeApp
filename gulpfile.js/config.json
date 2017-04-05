@@ -25,7 +25,7 @@
       },
       "extensions": ["js", "json"],
       "babel": {
-        "presets": ["es2015", "stage-1"],
+        "presets": ["es2015", "stage-1", "react"],
         "plugins": []
       },
       "extractSharedJs": false
@@ -39,7 +39,9 @@
       "sass": {
         "indentedSyntax": true,
         "includePaths": [
-          "./node_modules/normalize.css"
+          "./node_modules/normalize.css",
+          "./node_modules/materialize-css",
+          "./node_modules/material-components-web"
         ]
       },
       "extensions": ["sass", "scss", "css"]
