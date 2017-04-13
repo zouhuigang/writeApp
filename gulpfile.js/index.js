@@ -14,6 +14,5 @@ var path = require('path')
 
 var requireDir = require('require-dir')
 
-console.log(path.resolve('./src', 'javascripts'))
 // Require all tasks in gulpfile.js/tasks, including subfolders
 requireDir('./tasks', { recurse: true })

@@ -1,37 +1,28 @@
 {% extends 'layouts/application.html' %}
 
 
+{% block head %}
+<style>
+  #default-board > .Character-wrapper{
+    width: 300px;
+    height: 400px;
+  }
+  #data-board > .Character-wrapper {
+    width: 240px;
+    height: 360px;
+  }
+</style>
+{% endblock %}
 {% block content %}
-	<button class="mdc-button mdc-button--accent menu">
-	  Colored button
-	</button>
-	
-	<h1 class="mdc-typography--display1 mdc-typography--adjust-margin">
-    大标题
-  </h1>
-  <p>容器container</p>
-	<ul class="mdc-list">
-	  <li class="mdc-list-item">第一项</li>
-	  <li class="mdc-list-item">Single-line item</li>
-	  <li class="mdc-list-item">Single-line item</li>
-	</ul>
-
-  <aside class="mdc-temporary-drawer mdc-typography">
-    <nav class="mdc-temporary-drawer__drawer">
-      <header class="mdc-temporary-drawer__header">
-        <div class="mdc-temporary-drawer__header-content">
-          Header here
-        </div>
-      </header>
-      <nav id="icon-with-text-demo" class="mdc-temporary-drawer__content mdc-list">
-        <a class="mdc-list-item mdc-temporary-drawer--selected" href="#">
-          <i class="material-icons mdc-list-item__start-detail" aria-hidden="true">inbox</i>Inbox
-        </a>
-        <a class="mdc-list-item" href="#">
-          <i class="material-icons mdc-list-item__start-detail" aria-hidden="true">star</i>Star
-        </a>
-      </nav>
-    </nav>
-  </aside>
+	<div class="write">
+    <div class="example">
+      <h1>写字板</h1>
+      <div class="board" id="default-board"></div>
+    </div>
+    <div class="example">
+      <h1>展示</h1>
+      <div class="board" id="data-board"></div>
+    </div>
+  </div>
 
 {% endblock %}

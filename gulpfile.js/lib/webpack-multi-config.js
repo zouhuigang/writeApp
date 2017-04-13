@@ -28,16 +28,23 @@ module.exports = function(env) {
 
     resolve: {
       // 包含模块的目录
-      root: [
+      modules: [
         jsSrc, 
         path.resolve('./node_modules/materialize-css/dist/js'),
         // path.resolve('./node_modules/material-components-web')
       ],
+      alias: {
+        'vue$': 'vue/dist/vue.esm.js'
+      },
       // 模块的后缀名
       extensions: [''].concat(extensions)
     },
     module: {
       loaders: [
+        {
+          test: /\.vue$/,
+          loader: 'vue-loader',
+        },
         {
           // 必须满足的条件
           test: /\.js|jsx$/,
@@ -45,8 +52,13 @@ module.exports = function(env) {
           // 不满足的条件
           // exclude: /node_modules/,
           query: config.tasks.js.babel
-        }
+        },
       ]
+    },
+    vue: {
+      loaders: {
+        js: 'babel?presets[]=es2015'
+      }
     }
   }
 

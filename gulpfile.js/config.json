@@ -21,9 +21,9 @@
       "src": "javascripts",
       "dest": "javascripts",
       "entries": {
-        "app": ["./app.js"]
+        "main": ["./main.js"]
       },
-      "extensions": ["js", "json"],
+      "extensions": ["js", "json", "vue"],
       "babel": {
         "presets": ["es2015", "stage-1", "react"],
         "plugins": []

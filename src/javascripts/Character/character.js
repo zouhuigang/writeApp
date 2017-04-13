@@ -1,6 +1,8 @@
 import _ from 'lodash';
 import Point from './point';
 import Bezier from './bezier'
+import throttle from './throttle';
+import SimpleUndo from './simple_undo'
 
 const Character = function(id, opts) {
 	// DOM id
@@ -20,7 +22,9 @@ const Character = function(id, opts) {
 	this.index = 0;
 	// 模块元素
 	this.el = document.getElementById(id);
+	this.img;
 
+	this._onInputMoveUpdate = throttle(this._onInputMove, this.opts.throttle)
 	var tpl = '<div class="Character-wrapper"><canvas class="Character-canvas"></canvas></div>';
   tpl = '<div class="Character-controls"></div>' + tpl;
   this.el.innerHTML = tpl;
@@ -57,7 +61,7 @@ Character.prototype = {
 		var xmlFileInput = this.opts.xmlFileInput;
 
 		this.canvas.width = this.dom.canvasWrapper.clientWidth;
-    this.canvas.height = this.dom.canvasWrapper.clientHeight;
+    this.canvas.height = this.canvas.width * this.opts.aspectRatio;
 
     this.opts.charBoxWidth = this.canvas.width;
 
@@ -235,8 +239,8 @@ Character.prototype = {
 			const curve = curves[index - 2].curve;
 			const widths = curves[index -2].widths;
 			const widthDelta = widths.end - widths.start;
-			const drawSteps = Math.floor(curve.length() * 6);
-			console.log(drawSteps)
+			const drawSteps = Math.floor(curve.length());
+			// console.log(drawSteps)
 			ctx.beginPath();
 			ctx.strokeStyle = 'black';
 			ctx.fillStyle = 'black';
@@ -259,8 +263,8 @@ Character.prototype = {
 		    y += 3 * u * tt * curve.control2.y;
 		    y += ttt * curve.endPoint.y;
 		    const width = widths.start + (ttt * widthDelta);
-		    // this._drawImage(x, y, width)
-		    this._drawPoint(x, y, width)
+		    this._drawImage(x, y, width)
+		    // this._drawPoint(x, y, width)
 			}
 			ctx.closePath();
 			ctx.fill();
@@ -270,7 +274,7 @@ Character.prototype = {
 	_drawPoint: function(x, y, width) {
 		const ctx = this.context;
 		ctx.moveTo(x, y);
-		ctx.arc(x, y, 1, 0, 2 * Math.PI, false);
+		ctx.arc(x, y, width, 0, 2 * Math.PI, false);
 	},
 
 	_drawImage: function(x, y, width) {
@@ -280,7 +284,8 @@ Character.prototype = {
 	},
 
 	_pointWidth: function(velocity) {
-		return Math.max(this.opts.maxWidth * this._gaussian(velocity), this.opts.minWidth);
+		// return Math.max(this.opts.maxWidth * this._gaussian(velocity), this.opts.minWidth);
+		return Math.max(this.opts.maxWidth / (velocity + 1), this.opts.minWidth);
 	},
 
 	_calculateCurveWidths: function(curve) {
@@ -289,7 +294,6 @@ Character.prototype = {
 
 		const widths = { start: null, end: null };
 		const velocity = (this.opts.velocityFilterWeight * endPoint.velocityFrom(startPoint)) + ((1 - this.opts.velocityFilterWeight) * this._lastVelocity);
-
 		const newWidth = this._pointWidth(velocity);
 		
 		widths.start = this._lastWidth;
@@ -304,9 +308,9 @@ Character.prototype = {
   _drawPoints: function(ctx, index, points) {
 		const point = points[index];
   	ctx.beginPath();
-  	ctx.strokeStyle = 'gray';
-  	ctx.fillStyle = 'gray';
-  	ctx.lineWidth = 2;
+  	ctx.strokeStyle = 'black';
+  	ctx.fillStyle = 'black';
+  	ctx.lineWidth = 5;
   	if(index > 0) {
   		const prePoint = points[index - 1];
   		ctx.arc(point.x, point.y, 2, 2 * Math.PI, false);
@@ -344,7 +348,7 @@ Character.prototype = {
 		  this._onInputStart(e, this._getInputCoords(e));
 		});
 		this.addListenerMulti(this.canvas, 'touchmove mousemove', function(e) {
-		  this._onInputMove(e, this._getInputCoords(e));
+		  this._onInputMoveUpdate(e, this._getInputCoords(e));
 		});
 		this.addListenerMulti(this.canvas, 'mouseout touchend mouseup', function(e) {
 		  this._onInputStop(e);
@@ -376,11 +380,12 @@ Character.prototype = {
 	  e.preventDefault();
 	},
 
+
+
 	_onInputMove: function(e, coords) {
 	  if (this.isDrawing) {
 	    var x = coords.x;
 	    var y = coords.y;
-	  	console.log(x,y)
 	    this.index++;
 	    var point = this._createPoint(x, y, undefined, this.index);
 	    this._addPoint(point);
@@ -586,6 +591,18 @@ Character.prototype = {
 	    }
 	  }
 	},
+
+	saveImg: function(radio) {
+		var img;
+		// this.context.clearRect(0,0,this.canvas.width, this.canvas.height);
+		// this.drawAllPoints(this.canvas, this.strokeArray);
+		this.context.clearRect(0,0,this.canvas.width, this.canvas.height);
+		this.drawAllPoints(this.canvas, this.curvesArray);
+		img = new Image();
+		img = this.canvas.toDataURL("image/png");
+		this.img = img;			
+	},
+
 }
 
 Character.defaultOpts = {
@@ -598,12 +615,13 @@ Character.defaultOpts = {
 
   velocityFilterWeight: 0.7,
 
+  throttle: 16,
 
-  gaussian: 1,
+  gaussian: 0.8,
   sigmoid: 0.3,
   flat: 2.0,
-  maxWidth: 11,
-  minWidth: 5,
+  maxWidth: 10,
+  minWidth: 3,
   timeScale: 15,
 
   withGrid: true,
@@ -618,7 +636,7 @@ Character.defaultOpts = {
   background: "#fff",
 
   charRatio: 0.85,
-  aspectRatio: 4 / 3,
+  aspectRatio: 1,
   startPosition: {
     x: 0,
     y: 0
